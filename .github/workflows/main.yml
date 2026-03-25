@@ -1,41 +1,42 @@
-# Code
-- name: VPS
-  - workflow: dispatch
-    - jobs:
-    - server-vps1:
-    - run: on: ubuntu-latest
-    - timeout: minutes: 360
-    - steps:
-    - name: Install & Configure SSH
-    - run: 
-    - sudo apt update -y
-    - sudo apt install -y openssh-server
-    - sudo systemctl enable ssh
-    - sudo systemctl start ssh
-    - echo "root@ubuntu123" | sudo chpasswd
-    - echo "Password=123456" | sudo tee -a /etc/ssh/ssh_config
-    - sudo service ssh restart
-    - echo $SHELL | sudo -i
+name: VPS
 
-- name: Install Tailsdale
-  - run: 
-    - curl -fs http://tailsdale.com/install.sh | sh
-    - sudo tailsdale up --authority=$(cds; TALLSCALE_AUTH_KEY) > hostname.yaml
-    - cd Tailsdale
-    - echo "TALLSCALE_IP=$IP" >> SITE.HOME
-    - echo "TALLSCALE_IP:$IP" >> SITE.HOME
-    - echo "TALLSCALE_DB:$DB"
+on:
+  workflow_dispatch:
 
-- name: Verify SSH Access
-  - run: 
-    - echo "Tailsdale VPS ready!"
-    - echo "IP: $IP"
-    - echo "User: root"
-    - echo "Pass: admin@123"
-
-- name: Keep VPS Alive
-  - run: 
-    - while true: do
-    - echo "[$(date)] VPS running...$"
-    - sleep 300
-    - done
+jobs:
+  server-vps1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+      - name: Install & Configure SSH
+        run: |
+          sudo apt update -y
+          sudo apt install -y openssh-server
+          sudo systemctl enable ssh
+          sudo systemctl start ssh
+          echo "root:ubuntu123" | sudo chpasswd
+          echo "PasswordAuthentication yes" | sudo tee -a /etc/ssh/sshd_config
+          sudo service ssh restart
+          
+      - name: Install Tailscale
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
+          echo "Tailscale installed successfully"
+          
+      - name: Verify SSH Access
+        run: |
+          IP=$(curl -s ifconfig.me)
+          echo "================================="
+          echo "Tailscale VPS ready!"
+          echo "IP: $IP"
+          echo "User: root"
+          echo "Pass: ubuntu123"
+          echo "================================="
+          
+      - name: Keep VPS Alive
+        run: |
+          while true; do
+            echo "[$(date)] VPS running..."
+            sleep 300
+          done
